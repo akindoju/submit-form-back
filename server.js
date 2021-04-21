@@ -11,6 +11,7 @@ app.use(cors());
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true }));
 
+//connecting to database
 const sql = knex({
   client: 'mysql',
   connection: {
@@ -27,19 +28,22 @@ app.post('/signin', (req, res) => {
   sql
     .select('email', 'password')
     .from('signin')
-    .where('email', '=', email)
+    // .where('email', '=', email) //to specify that email should already exist
     .then((data) => {
-      const isValid = bcrypt.compareSync(password, data[0].password);
+      const isValid = bcrypt.compareSync(password, data[0].password); //comparing passwords
       if (isValid) {
         return sql
           .select('*')
           .from('users')
           .where('email', '=', email)
-          .then((user) => res.json(user[0]))
+          .then((user) => res.json(user[0])) //send selected user
           .catch((err) => {
             res.status(400).json(err);
           });
-      } else {
+      }
+
+      if (!isValid) {
+        //sending wrong credentials to database
         return sql
           .insert({
             email: email,
@@ -47,7 +51,7 @@ app.post('/signin', (req, res) => {
             date: new Date(),
           })
           .into('failed')
-          .then((user) => res.json(user[0]))
+          .then(res.json('Incorrect credentials')) //send err msg
           .catch((err) => {
             res.status(400).json(err);
           });
@@ -58,8 +62,9 @@ app.post('/signin', (req, res) => {
 
 app.post('/register', (req, res) => {
   const { email, password, name } = req.body;
-  const hash = bcrypt.hashSync(password, 10);
+  const hash = bcrypt.hashSync(password, 10); //e̶n̶c̶r̶y̶p̶t̶i̶n̶g̶  bcrypting password synchronously
 
+  //transaction is linking two or more tables together
   sql.transaction((trx) => {
     trx
       .insert({
