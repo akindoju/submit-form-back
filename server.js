@@ -36,7 +36,18 @@ app.post('/signin', (req, res) => {
           .select('*')
           .from('users')
           .where('email', '=', email)
-          .then((user) => res.json(user[0])) //send selected user
+          .then((user) => {
+            //push attempt into attempts table
+            sql
+              .insert({
+                email: user[0].email,
+                password: user[0].password,
+                date: new Date(),
+                status: 'Success',
+              })
+              .into('attempts')
+              .then(res.status(200).json(user[0]));
+          })
           .catch((err) => {
             res.status(400).json(err);
           });
@@ -49,8 +60,9 @@ app.post('/signin', (req, res) => {
             email: email,
             password: password,
             date: new Date(),
+            status: 'Failed',
           })
-          .into('failed')
+          .into('attempts')
           .then(res.json('Incorrect credentials')) //send err msg
           .catch((err) => {
             res.status(400).json(err);
@@ -77,6 +89,7 @@ app.post('/register', (req, res) => {
           .insert({
             email: email,
             name: name,
+            password: hash,
           })
           .then((data) => res.status(200).json('Successful'))
           .catch((err) => {
