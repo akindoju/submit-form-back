@@ -106,6 +106,11 @@ app.get('/users', async (req, res) => {
   res.status(200).send(users);
 });
 
+app.get('/log', async (req, res) => {
+  const attempts = await sql.select('*').from('attempts');
+  res.status(200).send(attempts);
+});
+
 app.listen(port, () => {
   console.log('App is listening on port ' + port);
 });
