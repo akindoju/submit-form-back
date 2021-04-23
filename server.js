@@ -112,13 +112,13 @@ app.get('/log', async (req, res) => {
 });
 
 app.put('/update', (req, res) => {
-  const { currentName, newName, currentEmail, newEmail } = req.body;
+  const { newName, currentEmail, newEmail } = req.body;
   sql.transaction((trx) => {
     trx('users')
-      .where({ name: currentName })
-      .orWhere({ email: currentEmail })
+      .where({ email: currentEmail })
       .update({ name: newName, email: newEmail })
       .then(
+        //selecting user from signin table and updating credentials
         sql
           .select('*')
           .from('signin')
@@ -136,7 +136,20 @@ app.put('/update', (req, res) => {
   });
 });
 
-app.delete('/delete', (req, res) => {});
+app.delete('/delete', (req, res) => {
+  const { email, password } = req.body;
+
+  sql.transaction((trx) => {
+    trx('users')
+      .where({ email: email })
+      .del()
+      .then(
+        sql('signin').where({ email: email }).del().then(res.json('Successful'))
+      )
+      .then(trx.commit)
+      .catch(trx.rollback);
+  });
+});
 
 app.listen(port, () => {
   console.log('App is listening on port ' + port);
