@@ -139,16 +139,25 @@ app.put('/update', (req, res) => {
 app.delete('/delete', (req, res) => {
   const { email, password } = req.body;
 
-  sql.transaction((trx) => {
-    trx('users')
-      .where({ email: email })
-      .del()
-      .then(
-        sql('signin').where({ email: email }).del().then(res.json('Successful'))
-      )
-      .then(trx.commit)
-      .catch(trx.rollback);
-  });
+  sql
+    .select('*')
+    .from('users')
+    .where({ email: email })
+    .then((data) => {
+      const isValid = bcrypt.compareSync(password, data[0].password);
+      if (isValid) {
+        sql('users')
+          .where({ email: email })
+          .del()
+          .then(
+            sql('signin')
+              .where({ email: email })
+              .del()
+              .then(res.json('Successful'))
+          );
+      } else
+        res.status(400).json('Seems something wants you to keep this profile');
+    });
 });
 
 app.listen(port, () => {
