@@ -117,20 +117,26 @@ app.put('/update', (req, res) => {
     trx('users')
       .where({ name: currentName })
       .orWhere({ email: currentEmail })
-      .update({ name: newName, email: newEmail }, ['name', 'email'])
+      .update({ name: newName, email: newEmail })
       .then(
-        trx('signin')
-          .where({ email: currentEmail })
-          .update({ email: newEmail }, ['email'])
-          .then((data) => console.log(data))
-          .catch((err) => {
-            res.status(400).json('Something went wrong');
-          })
+        sql
+          .select('*')
+          .from('signin')
+          .then(
+            sql('signin')
+              .where({ email: currentEmail })
+              .update({ email: newEmail })
+              .then((data) => {
+                res.json('Successful');
+              })
+          )
       )
       .then(trx.commit)
       .catch(trx.rollback);
   });
 });
+
+app.delete('/delete', (req, res) => {});
 
 app.listen(port, () => {
   console.log('App is listening on port ' + port);
