@@ -144,6 +144,31 @@ app.put('/update/email', (req, res) => {
     );
 });
 
+app.put('/update/password', (req, res) => {
+  const { email, newPassword } = req.body;
+  const hash = bcrypt.hashSync(newPassword, 10); //e̶n̶c̶r̶y̶p̶t̶i̶n̶g̶  bcrypting password synchronously
+
+  sql('users')
+    .where({ email: email })
+    .update({ password: hash })
+    .then(
+      //selecting user from signin table and updating credentials
+      sql
+        .select('*')
+        .from('signin')
+        .then(
+          sql('signin')
+            .where({ email: email })
+            .update({ password: hash })
+            .then((data) => {
+              res.json('Successful');
+            })
+            .catch((err) => res.json('Something went wrong'))
+        )
+        .catch((err) => res.json('Something went wrong'))
+    );
+});
+
 app.delete('/delete', (req, res) => {
   const { email, password } = req.body;
 
