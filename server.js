@@ -111,29 +111,37 @@ app.get('/log', async (req, res) => {
   res.status(200).send(attempts);
 });
 
-app.put('/update', (req, res) => {
-  const { newName, currentEmail, newEmail } = req.body;
-  sql.transaction((trx) => {
-    trx('users')
-      .where({ email: currentEmail })
-      .update({ name: newName, email: newEmail })
-      .then(
-        //selecting user from signin table and updating credentials
-        sql
-          .select('*')
-          .from('signin')
-          .then(
-            sql('signin')
-              .where({ email: currentEmail })
-              .update({ email: newEmail })
-              .then((data) => {
-                res.json('Successful');
-              })
-          )
-      )
-      .then(trx.commit)
-      .catch(trx.rollback);
-  });
+app.put('/update/name', (req, res) => {
+  const { newName, email } = req.body;
+  sql('users')
+    .where({ email: email })
+    .update({ name: newName })
+    .then((data) => res.json('Successful'))
+    .catch((err) => res.json('Something Went Wrong'));
+});
+
+app.put('/update/email', (req, res) => {
+  const { newEmail, currentEmail } = req.body;
+
+  sql('users')
+    .where({ email: currentEmail })
+    .update({ email: newEmail })
+    .then(
+      //selecting user from signin table and updating credentials
+      sql
+        .select('*')
+        .from('signin')
+        .then(
+          sql('signin')
+            .where({ email: currentEmail })
+            .update({ email: newEmail })
+            .then((data) => {
+              res.json('Successful');
+            })
+            .catch((err) => res.json('Something went wrong'))
+        )
+        .catch((err) => res.json('Something went wrong'))
+    );
 });
 
 app.delete('/delete', (req, res) => {
